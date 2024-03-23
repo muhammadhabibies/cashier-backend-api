@@ -1,41 +1,43 @@
-import mongoose from "mongoose"
-import mongoosePaginate from "mongoose-paginate-v2"
+import mongoose from "mongoose";
+import mongoosePaginate from "mongoose-paginate-v2";
 
-const Schema = mongoose.Schema({
+const Schema = mongoose.Schema(
+  {
     fullname: {
-        type: String,
+      type: String,
     },
     email: {
-        type: String,
+      type: String,
     },
     password: {
-        type: String,
+      type: String,
     },
     role: {
-        type: String,
-        enum: ['admin', 'cashier', 'employee'],
-        default: 'employee',
+      type: String,
+      enum: ["admin", "cashier", "employee"],
+      default: "employee",
     },
     status: {
-        type: String,
-        enum: ['active', 'inactive'],
-        default: 'active',
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active",
     },
     createdAt: {
-        type: Number
+      type: Number,
     },
     updatedAt: {
-        type: Number
-    }
-},
-    {
-        timestamps: { currentTime: () => Math.floor(Date.now() / 1000) }
-    });
+      type: Number,
+    },
+  },
+  {
+    timestamps: { currentTime: () => Math.floor(Date.now() / 1000) },
+  }
+);
 
 // pagination plugins (package)
 Schema.plugin(mongoosePaginate);
 
-export default mongoose.model('User', Schema);
+export default mongoose.model("User", Schema);
 
 // ada tips
 // sumber => https://stackoverflow.com/questions/12669615/add-created-at-and-updated-at-fields-to-mongoose-schemas
