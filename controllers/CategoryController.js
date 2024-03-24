@@ -3,10 +3,7 @@ import Category from "../models/Category.js";
 const index = async (req, res) => {
   try {
     const categories = await Category.find({ status: "active" });
-
-    if (!categories) {
-      throw { code: 500, message: "Get categories failed" };
-    }
+    if (!categories) throw { code: 500, message: "GET_CATEGORIES_FAILED" };
 
     return res.status(200).json({
       status: true,
@@ -23,20 +20,13 @@ const index = async (req, res) => {
 
 const store = async (req, res) => {
   try {
-    if (!req.body.title) {
-      throw { code: 428, message: "Title is required" };
-    }
-
-    const title = req.body.title;
+    if (!req.body.title) throw { code: 428, message: "TITLE_REQUIRED" };
 
     const newCategory = new Category({
-      title: title,
+      title: req.body.title,
     });
     const category = await newCategory.save();
-
-    if (!category) {
-      throw { code: 500, message: "Store category failed" };
-    }
+    if (!category) throw { code: 500, message: "STORE_CATEGORY_FAILED" };
 
     return res.status(200).json({
       status: true,

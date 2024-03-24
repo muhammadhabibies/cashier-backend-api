@@ -1,6 +1,5 @@
-import User from "../models/User.js";
-
 import bcrypt from "bcrypt";
+import User from "../models/User.js";
 import {
   isEmailExist,
   isEmailExistWithUserId,
@@ -8,7 +7,7 @@ import {
 
 const index = async (req, res) => {
   try {
-    // ini kalo tanpa plugin pagination
+    // tanpa plugin pagination
     // const users = await User.find();
 
     // dengan plugin pagination
@@ -22,9 +21,7 @@ const index = async (req, res) => {
     };
     const users = await User.paginate(find, options);
 
-    if (!users) {
-      throw { code: 404, message: "USER_NOT_FOUND" };
-    }
+    if (!users) throw { code: 404, message: "USER_NOT_FOUND" };
 
     return res.status(200).json({
       status: true,
@@ -32,7 +29,6 @@ const index = async (req, res) => {
       users,
     });
   } catch (err) {
-    // if (!err.code) { err.code = 500 }
     return res.status(err.code || 500).json({
       status: false,
       message: err.message,
@@ -42,45 +38,32 @@ const index = async (req, res) => {
 
 const store = async (req, res) => {
   try {
-    if (!req.body.fullname) {
-      throw { code: 428, message: "Fullname is required" };
-    }
-    if (!req.body.email) {
-      throw { code: 428, message: "Email is required" };
-    }
-    if (!req.body.password) {
-      throw { code: 428, message: "Password is required" };
-    }
-    if (!req.body.role) {
-      throw { code: 428, message: "Role is required" };
-    }
+    const { fullname, email, password, role, retype_password } = req.body;
+    if (!fullname) throw { code: 428, message: "FULLNAME_REQUIRED" };
+    if (!email) throw { code: 428, message: "EMAIL_REQUIRED" };
+    if (!password) throw { code: 428, message: "PASSWORD_REQUIRED" };
+    if (!role) throw { code: 428, message: "ROLE_REQUIRED" };
 
-    // pengecekan apakah password match atau tidak ketika diulang kedua kalinya
-    if (req.body.password !== req.body.retype_password) {
+    // cek password & retype_password sama ga
+    if (password !== retype_password) {
       throw { code: 428, message: "PASSWORD_NOT_MATCH" };
     }
 
-    // pengecekan apakah email sudah pernah didaftarkan atau belum
-    const email = await isEmailExist(req.body.email);
-    if (email) {
-      throw { code: 409, message: "EMAIL_EXIST" };
-    }
+    // cek email sudah terdaftar
+    const emailExist = await isEmailExist(email);
+    if (emailExist) throw { code: 409, message: "EMAIL_EXIST" };
 
-    // bcrypt
-    let salt = await bcrypt.genSalt(10);
-    let hash = await bcrypt.hash(req.body.password, salt);
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(password, salt);
 
     const newUser = new User({
-      fullname: req.body.fullname,
-      email: req.body.email,
-      role: req.body.role,
+      fullname: fullname,
+      email: email,
+      role: role,
       password: hash,
     });
     const user = await newUser.save();
-
-    if (!user) {
-      throw { code: 500, message: "USER_REGISTER_FAILED" };
-    }
+    if (!user) throw { code: 500, message: "REGISTER_USER_FAILED" };
 
     return res.status(200).json({
       status: true,
@@ -88,8 +71,6 @@ const store = async (req, res) => {
       user,
     });
   } catch (err) {
-    // kalau gak ada error code berarti error codenya 500 agar server tidak mati dan kita tidak tahu errornya apa
-    // if (!err.code) { err.code = 500 } // disingkat menjadi || 500 aja
     return res.status(err.code || 500).json({
       status: false,
       message: err.message,
@@ -99,25 +80,16 @@ const store = async (req, res) => {
 
 const show = async (req, res) => {
   try {
-    // nanti kan kita mau mengirim id, kita cek apakah id tidak dikirim oleh user, maka kita kasih pesan error id required
-    if (!req.params.id) {
-      throw { code: 428, message: "ID is required" };
-    }
+    if (!req.params.id) throw { code: 428, message: "ID_REQUIRED" };
 
-    // lakukan query berdasarkan id yang dikirim melalui parameter (params)
     const user = await User.findById(req.params.id);
-
-    // throw kalau datanya tidak ditemukan
-    if (!user) {
-      throw { code: 404, message: "USER_NOT_FOUND" };
-    }
+    if (!user) throw { code: 404, message: "USER_NOT_FOUND" };
 
     return res.status(200).json({
       status: true,
       user,
     });
   } catch (err) {
-    // if (!err.code) { err.code = 500 }
     return res.status(err.code || 500).json({
       status: false,
       message: err.message,
@@ -127,60 +99,42 @@ const show = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    if (!req.params.id) {
-      throw { code: 428, message: "ID is required" };
-    }
-    if (!req.body.fullname) {
-      throw { code: 428, message: "Fullname is required" };
-    }
-    if (!req.body.email) {
-      throw { code: 428, message: "Email is required" };
-    }
-    if (!req.body.role) {
-      throw { code: 428, message: "Role is required" };
-    }
+    const { fullname, email, role, retype_password } = req.body;
+    if (!req.params.id) throw { code: 428, message: "ID_REQUIRED" };
+    if (!fullname) throw { code: 428, message: "FULLNAME_REQUIRED" };
+    if (!email) throw { code: 428, message: "EMAIL_REQUIRED" };
+    if (!role) throw { code: 428, message: "ROLE_REQUIRED" };
 
-    // pengecekan apakah password match atau tidak ketika diulang kedua kalinya
-    if (req.body.password !== req.body.retype_password) {
+    // cek password & retype_password sama ga
+    if (password !== retype_password) {
       throw { code: 428, message: "PASSWORD_NOT_MATCH" };
     }
 
-    // pengecekan apakah email sudah pernah didaftarkan atau belum (TAPI DENGAN ID YANG SESUAI KARENA INI UPDATE)
-    const email = await isEmailExistWithUserId(req.params.id, req.body.email);
-    if (email) {
-      throw { code: 409, message: "EMAIL_EXIST" };
+    // cek email sudah terdaftar, tapi dengan id yang sesuai karena ini update
+    const emailExist = await isEmailExistWithUserId(req.params.id, email);
+    if (emailExist) throw { code: 409, message: "EMAIL_EXIST" };
+
+    const updatedData = { fullname, email, role };
+
+    // password optional, kalau ada baru akan di-update
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      const hash = await bcrypt.hash(password, salt);
+      updatedData.password = hash;
     }
 
-    let fields = {};
-    fields.fullname = req.body.fullname;
-    fields.email = req.body.email;
-    fields.role = req.body.role;
-
-    // password ini optional, kalau kosong tidak diupdate, kalau diisi baru akan diupdate passwordnya
-    if (req.body.password) {
-      // update password bcrypt
-      let salt = await bcrypt.genSalt(10);
-      let hash = await bcrypt.hash(req.body.password, salt);
-      fields.password = hash;
-    }
-
-    // update user
-    const user = await User.findByIdAndUpdate(req.params.id, fields, {
+    // id ambil dari url
+    const user = await User.findByIdAndUpdate(req.params.id, updatedData, {
       new: true,
-    }); // params ini untuk mengambil id dari url, kalau untuk fullname, email, role kita simpen di body karena kita melewatkannya melalui form
-
-    if (!user) {
-      throw { code: 500, message: "USER_UPDATE_FAILED" };
-    }
+    });
+    if (!user) throw { code: 500, message: "USER_UPDATE_FAILED" };
 
     return res.status(200).json({
       status: true,
-      message: "USER_UPDATE_SUCCESS",
+      message: "USER_UPDATED",
       user,
     });
   } catch (err) {
-    // kalau gak ada error code berarti error codenya 500 agar server tidak mati dan kita tidak tahu errornya apa
-    // if (!err.code) { err.code = 500 } // dipersingkat aja menjadi || 500
     return res.status(err.code || 500).json({
       status: false,
       message: err.message,
@@ -190,25 +144,17 @@ const update = async (req, res) => {
 
 const destroy = async (req, res) => {
   try {
-    if (!req.params.id) {
-      throw { code: 428, message: "ID is required" };
-    }
+    if (!req.params.id) throw { code: 428, message: "ID_REQUIRED" };
 
-    // delete user
     const user = await User.findByIdAndDelete(req.params.id);
-
-    if (!user) {
-      throw { code: 500, message: "USER_DELETE_FAILED" };
-    }
+    if (!user) throw { code: 500, message: "USER_DELETE_FAILED" };
 
     return res.status(200).json({
       status: true,
-      message: "USER_DELETE_SUCCESS",
+      message: "USER_DELETED",
       user,
     });
   } catch (err) {
-    // kalau gak ada error code berarti error codenya 500 agar server tidak mati dan kita tidak tahu errornya apa
-    // if (!err.code) { err.code = 500 } // dipersingkat aja menjadi || 500
     return res.status(err.code || 500).json({
       status: false,
       message: err.message,
